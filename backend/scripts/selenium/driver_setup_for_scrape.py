@@ -31,6 +31,7 @@ def restart_driver_and_tor(driver, tor_process, use_tor=False, linkedin=False, c
     if driver is not None:
         try:
             driver.quit()
+            time.sleep(2)
             logging.info("WebDriver closed successfully")
         except WebDriverException as e:
             logging.warning(f"Failed to close WebDriver: {e}")
