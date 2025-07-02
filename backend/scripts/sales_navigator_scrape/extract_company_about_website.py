@@ -16,7 +16,7 @@ import logging
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs, unquote
 import tldextract
-from backend.scripts.selenium.driver_setup_for_scrape import kill_chrome_processes, setup_driver, setup_driver_linkedin_singin
+from backend.scripts.selenium.driver_setup_for_scrape import kill_chrome_processes, restart_driver_and_tor, setup_driver, setup_driver_linkedin_singin
 from backend.config import Config  # Import Config for path management
 from config.logging import setup_logging
 from config.job_functions import write_progress, check_stop_signal
@@ -51,15 +51,14 @@ def extract_company_info(first_name, company_url, index, driver, max_retries=3, 
 
     for attempt in range(1, max_retries + 1):
         try:
+            logging.debug("Get URL Error")
             driver.get(company_url)
             time.sleep(random.uniform(2, 4))  # Allow time for JavaScript content to load
 
             # Check for login page
             if "linkedin.com/login" in driver.current_url:
                 logging.error(f"Login required for {company_url}. Attempting re-login...")
-                driver.quit()
-                time.sleep(2)
-                driver = setup_driver_linkedin_singin()
+                driver, _ = restart_driver_and_tor(driver=driver, tor_process=None, use_tor=False, linkedin=True)
                 time.sleep(2)
                 driver.get(company_url)
                 time.sleep(random.uniform(2, 4))
@@ -112,10 +111,8 @@ def extract_company_info(first_name, company_url, index, driver, max_retries=3, 
             logging.error(f"[Attempt {attempt}] Error processing {company_url} for {first_name}: {e}")
             if attempt < max_retries:
                 time.sleep(retry_delay)
-                driver.quit()
-                time.sleep(3)
-                driver = setup_driver_linkedin_singin()
-                time.sleep(4)
+                driver, _ = restart_driver_and_tor(driver, None, use_tor=False, linkedin=True)
+                time.sleep(2)
             else:
                 return result, driver
 
@@ -229,9 +226,7 @@ def process_csv_and_extract_info(input_csv, output_csv, max_rows=2000, batch_siz
                         # Check for session expiration
                         if driver.current_url.startswith("https://www.linkedin.com/login"):
                             logging.warning(f"Session expired for row {idx + 1}. Reinitializing WebDriver.")
-                            driver.quit()
-                            time.sleep(3)
-                            driver = setup_driver_linkedin_singin()
+                            driver, _ = restart_driver_and_tor(driver, None, use_tor=False, linkedin=True)
                             time.sleep(3)
 
                         first_name = df.at[idx, 'First Name']
@@ -267,7 +262,7 @@ def process_csv_and_extract_info(input_csv, output_csv, max_rows=2000, batch_siz
                     if driver is not None:
                         try:
                             driver.quit()
-                            logging.info("WebDriver closed successfully")
+                            logging.info("WebDriver closed successfully - 1")
                         except Exception as e:
                             logging.error(f"Error closing WebDriver: {e}")
                         # # Ensure all Chrome processes are terminated
@@ -282,14 +277,17 @@ def process_csv_and_extract_info(input_csv, output_csv, max_rows=2000, batch_siz
             if driver is not None:
                 try:
                     driver.quit()
+                    time.sleep(2)
+                    logging.info("WebDriver closed successfully - 2")
                 except:
-                    logging.error("Error closing WebDriver")
+                    logging.error("Error closing WebDriver - 2")
                 logging.info("WebDriver process closed")
             # kill_chrome_processes()
             # Only write final progress if not already stopped
             if not stopped:
                 final_status = "stopped" if check_stop_signal(step_id) else "completed"
-                final_row = total_rows if final_status == "completed" else max(0, min(total_rows, df.index[-1] + 1 if not df.empty else 0))
+                final_row = (total_rows + offset) if final_status == "completed" else max(0, min(total_rows, df.index[-1] + 1 if not df.empty else 0))
+                logging.info(f"Final Status: {final_status}\nFinal Row:{final_row}\nTotal Rows:{total_rows}\n DF Index {df.index[-1] + 1}")
                 write_progress(final_row, total_rows + offset, job_id, step_id=step_id, stop_call=(final_status == "stopped"))
 
         # Optionally delete rows where Website is "None"
@@ -316,10 +314,12 @@ def process_csv_and_extract_info(input_csv, output_csv, max_rows=2000, batch_siz
         print(f"Error processing CSV: {e}")
         return None
     finally:
-        if not stopped:
-            final_status = "stopped" if check_stop_signal(step_id) else "completed"
-            final_row = total_rows if final_status == "completed" else max(0, min(total_rows, df.index[-1] + 1 if not df.empty else 0))
-            write_progress(final_row, total_rows + offset, job_id, step_id=step_id, stop_call=(final_status == "stopped"))
+        logging.info("Last FINALLY BLOCK")
+        # if not stopped:
+        #     final_status = "stopped" if check_stop_signal(step_id) else "completed"
+        #     final_row = total_rows if final_status == "completed" else max(0, min(total_rows, df.index[-1] + 1 if not df.empty else 0))
+        #     logging.debug(f"Final Status: {final_status}\nFinal Row:{final_row}\nTotal Rows:{total_rows}\n DF Index {df.index[-1] + 1}")
+        #     write_progress(final_row, total_rows + offset, job_id, step_id=step_id, stop_call=(final_status == "stopped"))
 
 # Example usage
 if __name__ == "__main__":
