@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outreach System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex h-screen bg-gray-100">
+    <!-- Sidebar -->
+    <div class="w-64 bg-gray-800 text-white p-4">
+        <h1 class="text-2xl font-bold mb-6">Outreach System</h1>
+        <ul>
+            <li class="mb-2">
+                <button id="step1" class="w-full text-left p-2 bg-blue-600 rounded hover:bg-blue-700">Step 1: Scrape Sales Navigator</button>
+            </li>
+            <li class="mb-2">
+                <button id="step2" class="w-full text-left p-2 bg-blue-600 rounded hover:bg-blue-700">Step 2: Remove Empty URLs</button>
+            </li>
+            <li class="mb-2">
+                <button id="step3" class="w-full text-left p-2 bg-gray-600 rounded cursor-not-allowed" disabled>Step 3: Format Names</button>
+            </li>
+            <li class="mb-2">
+                <button id="step4" class="w-full text-left p-2 bg-gray-600 rounded cursor-not-allowed" disabled>Step 4: Update Company URLs (Disabled)</button>
+            </li>
+            <li class="mb-2">
+                <button id="step5" class="w-full text-left p-2 bg-gray-600 rounded cursor-not-allowed" disabled>Step 5: Extract Company Info</button>
+            </li>
+            <li class="mb-2">
+                <button id="step6" class="w-full text-left p-2 bg-gray-600 rounded cursor-not-allowed" disabled>Step 6: Find Emails</button>
+            </li>
+            <li class="mb-2">
+                <button id="step7" class="w-full text-left p-2 bg-gray-600 rounded cursor-not-allowed" disabled>Step 7: Verify Emails</button>
+            </li>
+        </ul>
+    </div>
+    <!-- Main Content -->
+    <div class="flex-1 p-6">
+        <div id="step1-content">
+            <h2 class="text-xl font-semibold mb-4">Step 1: Scrape Sales Navigator</h2>
+            <div class="mb-4">
+                <label for="html_input" class="block text-sm font-medium text-gray-700">Paste Sales Navigator HTML Body</label>
+                <textarea id="html_input" rows="20" class="w-full p-2 border rounded-md" placeholder="Paste HTML content here..."></textarea>
+            </div>
+            <div class="mb-4">
+                <label for="output_file" class="block text-sm font-medium text-gray-700">Output CSV Filename</label>
+                <input type="text" id="output_file" class="w-full p-2 border rounded-md" placeholder="e.g., IT Services.csv">
+            </div>
+            <button id="run_step1" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Run Step 1</button>
+            <div id="status1" class="mt-4 text-sm text-gray-700"></div>
+        </div>
+        <div id="step2-content" class="mt-8 hidden">
+            <h2 class="text-xl font-semibold mb-4">Step 2: Remove Empty URLs</h2>
+            <div class="mb-4">
+                <label for="input_csv2" class="block text-sm font-medium text-gray-700">Select Input CSV</label>
+                <select id="input_csv2" class="w-full p-2 border rounded-md"></select>
+            </div>
+            <button id="run_step2" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Run Step 2</button>
+            <div id="status2" class="mt-4 text-sm text-gray-700"></div>
+        </div>
+        <div id="step3-content" class="mt-8 hidden">
+            <h2 class="text-xl font-semibold mb-4">Step 3: Format Names</h2>
+            <div class="mb-4">
+                <label for="input_csv3" class="block text-sm font-medium text-gray-700">Select Input CSV</label>
+                <select id="input_csv3" class="w-full p-2 border rounded-md"></select>
+            </div>
+            <button id="run_step3" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Run Step 3</button>
+            <div id="status3" class="mt-4 text-sm text-gray-700"></div>
+        </div>
+        <div id="step4-content" class="mt-8 hidden">
+            <h2 class="text-xl font-semibold mb-4">Step 4: Update Company URLs (Disabled)</h2>
+            <p class="text-sm text-gray-600">Step 4 is no longer required as Step 5 now handles company URL processing directly.</p>
+            <!-- <div class="mb-4">
+                <label for="input_csv4" class="block text-sm font-medium text-gray-700">Select Input CSV</label>
+                <select id="input_csv4" class="w-full p-2 border rounded-md"></select>
+            </div>
+            <div class="mb-4">
+                <label for="max_rows_step4" class="block text-sm font-medium text-gray-700">Maximum Rows to Process (default: 2000)</label>
+                <input type="number" id="max_rows_step4" class="w-full p-2 border rounded-md" value="2000" min="1">
+            </div>
+            <div class="mb-4">
+                <label for="batch_size_step4" class="block text-sm font-medium text-gray-700">Batch Size (default: 10)</label>
+                <input type="number" id="batch_size_step4" class="w-full p-2 border rounded-md" value="10" min="1">
+            </div>
+            <div class="flex space-x-2">
+                <button id="run_step4" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Run Step 4</button>
+                <button id="stop_step4" class="px-4 py-2 bg-gray-600 text-white rounded cursor-not-allowed" disabled>Stop Step 4</button>
+            </div>
+            <div id="status4" class="mt-4 text-sm text-gray-700"></div>         -->
+        </div>
+        <div id="step5-content" class="mt-8 hidden">
+            <h2 class="text-xl font-semibold mb-4">Step 5: Extract Company Info</h2>
+            <div class="mb-4">
+                <label for="job_select_step5" class="block text-sm font-medium text-gray-700">Select Running Job</label>
+                <select id="job_select_step5" class="w-full p-2 border rounded-md">
+                    <option value="">Select a job</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="input_csv5" class="block text-sm font-medium text-gray-700">Select Input CSV</label>
+                <select id="input_csv5" class="w-full p-2 border rounded-md"></select>
+            </div>
+            <div class="mb-4">
+                <label for="max_rows_step5" class="block text-sm font-medium text-gray-700">Maximum Rows to Process (default: 2000)</label>
+                <input type="number" id="max_rows_step5" class="w-full p-2 border rounded-md" value="2000" min="1">
+            </div>
+            <div class="mb-4">
+                <label for="batch_size_step5" class="block text-sm font-medium text-gray-700">Batch Size (default: 30)</label>
+                <input type="number" id="batch_size_step5" class="w-full p-2 border rounded-md" value="30" min="1">
+            </div>
+            <div class="mb-4">
+                <label for="delete_no_website" class="block text-sm font-medium text-gray-700">Delete Rows with No Website</label>
+                <input type="checkbox" id="delete_no_website" class="mr-2" unchecked>
+                <span class="text-sm text-gray-600">If checked, rows without a website will be removed (default: unchecked)</span>
+            </div>
+            <div class="mb-4">
+                <label for="offset" class="block text-sm font-medium text-gray-700">Offset (rows to skip, default: 0)</label>
+                <input type="number" id="offset" class="w-full p-2 border rounded-md" value="0" min="0">
+            </div>
+            <!-- <div class="mb-4">
+                <label for="tor_restart_interval" class="block text-sm font-medium text-gray-700">Tor Restart Interval (rows, default: 50)</label>
+                <input type="number" id="tor_restart_interval" class="w-full p-2 border rounded-md" value="50" min="1">
+            </div> -->
+            <div class="flex space-x-2">
+                <button id="run_step5" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Run Step 5</button>
+                <button id="stop_step5" class="px-4 py-2 bg-gray-600 text-white rounded cursor-not-allowed" disabled>Stop Step 5</button>
+            </div>
+            <div id="status5" class="mt-4 text-sm text-gray-700"></div>
+        </div>
+        <div id="step6-content" class="mt-8 hidden">
+            <h2 class="text-xl font-semibold mb-4">Step 6: Find Emails</h2>
+            <div class="mb-4">
+                <label for="job_select_step6" class="block text-sm font-medium text-gray-700">Select Running Job</label>
+                <select id="job_select_step6" class="w-full p-2 border rounded-md">
+                    <option value="">Select a job</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="input_csv6" class="block text-sm font-medium text-gray-700">Select Input CSV</label>
+                <select id="input_csv6" class="w-full p-2 border rounded-md"></select>
+            </div>
+            <div class="mb-4">
+                <label for="max_rows_step6" class="block text-sm font-medium text-gray-700">Maximum Rows to Process (default: 2000)</label>
+                <input type="number" id="max_rows_step6" class="w-full p-2 border rounded-md" value="2000" min="1">
+            </div>
+            <div class="mb-4">
+                <label for="batch_size_step6" class="block text-sm font-medium text-gray-700">Batch Size (default: 50)</label>
+                <input type="number" id="batch_size_step6" class="w-full p-2 border rounded-md" value="50" min="1">
+            </div>
+            <div class="mb-4">
+                <label for="delete_no_email" class="block text-sm font-medium text-gray-700">Delete Rows with No Email</label>
+                <input type="checkbox" id="delete_no_email" class="mr-2" unchecked>
+                <span class="text-sm text-gray-600">If checked, rows without an email will be removed (default: unchecked)</span>
+            </div>
+            <div class="mb-4">
+                <label for="offset_step6" class="block text-sm font-medium text-gray-700">Offset (rows to skip, default: 0)</label>
+                <input type="number" id="offset_step6" class="w-full p-2 border rounded-md" value="0" min="0">
+            </div>
+            <div class="mb-4">
+                <label for="tor_restart_interval_step6" class="block text-sm font-medium text-gray-700">Tor Restart Interval (rows, default: 10)</label>
+                <input type="number" id="tor_restart_interval_step6" class="w-full p-2 border rounded-md" value="10" min="1">
+            </div>
+            <div class="flex space-x-2">
+                <button id="run_step6" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Run Step 6</button>
+                <button id="stop_step6" class="px-4 py-2 bg-gray-600 text-white rounded cursor-not-allowed" disabled>Stop Step 6</button>
+            </div>
+            <div id="status6" class="mt-4 text-sm text-gray-700"></div>
+        </div>
+        <div id="step7-content" class="mt-8 hidden">
+            <h2 class="text-xl font-semibold mb-4">Step 7: Verify Emails</h2>
+            <div class="mb-4">
+                <label for="job_select_step7" class="block text-sm font-medium text-gray-700">Select Running Job</label>
+                <select id="job_select_step7" class="w-full p-2 border rounded-md">
+                    <option value="">Select a job</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="input_csv7" class="block text-sm font-medium text-gray-700">Select Input CSV</label>
+                <select id="input_csv7" class="w-full p-2 border rounded-md"></select>
+            </div>
+            <div class="mb-4">
+                <label for="max_rows_step7" class="block text-sm font-medium text-gray-700">Maximum Rows to Process (default: 2000)</label>
+                <input type="number" id="max_rows_step7" class="w-full p-2 border rounded-md" value="2000" min="1">
+            </div>
+            <div class="mb-4">
+                <label for="batch_size_step7" class="block text-sm font-medium text-gray-700">Batch Size (default: 50)</label>
+                <input type="number" id="batch_size_step7" class="w-full p-2 border rounded-md" value="50" min="1">
+            </div>
+            <div class="mb-4">
+                <label for="delete_invalid" class="block text-sm font-medium text-gray-700">Delete Rows with Invalid Emails</label>
+                <input type="checkbox" id="delete_invalid" class="mr-2" unchecked>
+                <span class="text-sm text-gray-600">If checked, rows with invalid emails will be removed (default: unchecked)</span>
+            </div>
+            <div class="mb-4">
+                <label for="offset_step7" class="block text-sm font-medium text-gray-700">Offset (rows to skip, default: 0)</label>
+                <input type="number" id="offset_step7" class="w-full p-2 border rounded-md" value="0" min="0">
+            </div>
+            <div class="mb-4">
+                <label for="tor_restart_interval_step7" class="block text-sm font-medium text-gray-700">Tor Restart Interval (rows, default: 10)</label>
+                <input type="number" id="tor_restart_interval_step7" class="w-full p-2 border rounded-md" value="10" min="1">
+            </div>
+            <div class="flex space-x-2">
+                <button id="run_step7" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Run Step 7</button>
+                <button id="stop_step7" class="px-4 py-2 bg-gray-600 text-white rounded cursor-not-allowed" disabled>Stop Step 7</button>
+            </div>
+            <div id="status7" class="mt-4 text-sm text-gray-700"></div>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
