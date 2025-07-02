@@ -8,6 +8,7 @@ from backend.config import Config
 def setup_logging(log_dir=Config.LOG_PATH, log_prefix=Config.LOG_PREFIX):
     """
     Sets up logging with a timestamped log file in the specified directory.
+    Includes the source file name in log messages for better traceability.
     Creates the directory if it doesn't exist and falls back to the current directory if there's an error.
     
     Parameters:
@@ -25,7 +26,7 @@ def setup_logging(log_dir=Config.LOG_PATH, log_prefix=Config.LOG_PREFIX):
         logging.basicConfig(
             filename=log_file,
             level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s'
+            format='%(asctime)s - %(levelname)s - %(filename)s - %(message)s'
         )
         logging.info(f"Logging initialized to {log_file}")
     except (OSError, PermissionError) as e:
@@ -33,7 +34,7 @@ def setup_logging(log_dir=Config.LOG_PATH, log_prefix=Config.LOG_PREFIX):
         logging.basicConfig(
             filename=fallback_log_file,
             level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s'
+            format='%(asctime)s - %(levelname)s - %(filename)s - %(message)s'
         )
         logging.error(f"Failed to save log to {log_file}: {e}")
         logging.info(f"Fallback logging initialized to {fallback_log_file}")
