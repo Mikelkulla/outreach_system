@@ -27,10 +27,36 @@ def write_progress(current_row, total_rows, job_id, step_id, stop_call=False):
                 "total_rows": total_rows,
                 "status": status
             }, f, indent=2)
+        update_job_status(step_id, job_id, status)
         logging.info(f"Progress updated for job {job_id} ({step_id}): row {current_row}/{total_rows}, status: {status}")
     except Exception as e:
         logging.error(f"Failed to write progress for job {job_id} ({step_id}): {e}")
 
+def update_job_status(step, job_id, status):
+    """
+    Updates the status of a job in the jobs_stepX.json file.
+    
+    Parameters:
+        step (int): Step number (5, 6, or 7).
+        job_id (str): UUID of the job.
+        status (str): New status ('running', 'completed', or 'stopped').
+    """
+    jobs_file = os.path.join(Config.TEMP_PATH, f"jobs_{step}.json")
+    try:
+        os.makedirs(Config.TEMP_PATH, exist_ok=True)
+        if os.path.exists(jobs_file):
+            with open(jobs_file, "r") as f:
+                jobs = json.load(f)
+        else:
+            jobs = []
+        for job in jobs:
+            if job["job_id"] == job_id:
+                job["status"] = status
+                break
+        with open(jobs_file, "w") as f:
+            json.dump(jobs, f, indent=2)
+    except Exception as e:
+        print(f"Error updating job status for step {step}, job {job_id}: {e}")
 
 def check_stop_signal(step_id):
     """
