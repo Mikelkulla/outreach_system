@@ -8,20 +8,19 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from urllib3.exceptions import NewConnectionError as Urllib3NewConnectionError
-from backend.scripts.selenium.driver_setup_for_scrape import start_tor, stop_tor, setup_chrome_with_tor
+from backend.scripts.selenium.driver_setup_for_scrape import restart_driver_and_tor, start_tor, stop_tor, setup_chrome_with_tor
 from backend.config import Config
 from config.logging import setup_logging
 from config.job_functions import write_progress, check_stop_signal
 from config.utils import load_csv
 from selenium.common.exceptions import WebDriverException
 
-
 def verify_email_neverbounce():
     pass
 
 def verify_email_scrapp(email, driver, tor_process=None, max_retries=2, retry_delay=2):
     """
-    Verifies an email on Skrapp.io Email Verifier with up to 2 retries.
+    Verifies an email on Skrapp.io Email Verifier with up to 2 retries, checking only the verification message.
 
     Parameters:
         email (str): Email address to verify.
@@ -31,47 +30,38 @@ def verify_email_scrapp(email, driver, tor_process=None, max_retries=2, retry_de
         retry_delay (int): Delay between retries in seconds.
 
     Returns:
-        tuple: (email_status, syntax_status, server_status, tor_process) where statuses are "Valid", "Invalid", "Unknown", "Catch-All", "Pending", or None,
-               and tor_process is the current Tor process.
+        tuple: (email_status, tor_process) where email_status is "Valid", "Invalid", "Catch-All", "search_limit",
+               "timeout", "connection_error", or "no_result", and tor_process is the current Tor process.
     """
     for attempt in range(1, max_retries + 1):
         try:
             logging.info(f"Attempt {attempt} to verify email: {email}")
             driver.get("https://skrapp.io/email-verifier")
-            time.sleep(2)
+            time.sleep(random.uniform(3, 5))
 
             # Check for access denied (HTTP 403) or request blocked
             if "access to skrapp.io was denied" in driver.page_source.lower() or "http error 403" in driver.page_source.lower():
                 logging.warning("Access denied (HTTP 403) detected. Restarting Tor...")
-                return None, None, None, tor_process
-                # try:
-                #     driver.quit()
-                # except WebDriverException as e:
-                #     logging.warning(f"Failed to close WebDriver on HTTP 403: {e}")
-                # if tor_process:
-                #     stop_tor(tor_process)
-                # tor_process = start_tor()
-                # time.sleep(9)
-                # driver = setup_chrome_with_tor()
-                # driver.get("https://skrapp.io/email-verifier")
-                # time.sleep(2)
+                return "search_limit", tor_process
 
             # Wait for the email field to be present
-            WebDriverWait(driver, 10).until(
+            WebDriverWait(driver, 15).until(
                 EC.presence_of_element_located((By.NAME, "email"))
             )
 
             # Fill email field
-            time.sleep(0.5)
+            time.sleep(random.uniform(0.1, 2))
             email_field = driver.find_element(By.NAME, "email")
-            time.sleep(0.5)
+            time.sleep(random.uniform(0.1, 2))
             email_field.clear()
+            time.sleep(random.uniform(0.1, 2))
             email_field.send_keys(email)
-            time.sleep(1)
+            time.sleep(random.uniform(0.1, 2))
+            
 
             # Click Verify Email button
             verify_button = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, ".MuiTypography-root.css-ekhccu"))
+                EC.element_to_be_clickable((By.CSS_SELECTOR, ".MuiTypography-root.css-1ulaxtk"))
             )
             try:
                 verify_button.click()
@@ -91,36 +81,19 @@ def verify_email_scrapp(email, driver, tor_process=None, max_retries=2, retry_de
                 if attempt < max_retries:
                     time.sleep(retry_delay)
                     continue
-                return None, None, None, tor_process
+                return "timeout", tor_process
 
             # Check for "Too many requests sent" message
             try:
                 limit_element = driver.find_element(By.XPATH, "//div[contains(., 'Too many requests sent')]")
                 if limit_element:
                     logging.warning(f"Too many requests sent for {email}. Restarting Tor...")
-                    # try:
-                    #     driver.quit()
-                    # except WebDriverException as e:
-                    #     logging.warning(f"Failed to close WebDriver on rate limit: {e}")
-                    # if tor_process:
-                    #     stop_tor(tor_process)
-                    # tor_process = start_tor()
-                    # time.sleep(15)
-                    # driver = setup_chrome_with_tor()
-                    # if attempt < max_retries:
-                    #     logging.info(f"Retrying after Tor restart for {email}")
-                    #     continue
-                    # else:
-                    #     logging.warning(f"Max retries reached after too many requests for {email}")
-                    return None, None, None, tor_process
+                    return "search_limit", tor_process
             except:
                 pass
 
             # Check for verification messages
             email_status = None
-            syntax_status = None
-            server_status = None
-
             # Check for valid, invalid, or catch-all messages
             verification_messages = [
                 ("Valid",       "//div[contains(@class, 'MuiBox-root css-1pmn8ky')]//p[contains(text(), 'Email is valid and successfully reachable.')]"),
@@ -141,59 +114,26 @@ def verify_email_scrapp(email, driver, tor_process=None, max_retries=2, retry_de
 
             if not email_status:
                 logging.info(f"No valid, invalid, or catch-all email confirmation message found for {email}")
-                return None, None, None, tor_process
+                return "no_result", tor_process
 
-            # Extract Email Status
-            try:
-                email_status_element = driver.find_element(By.XPATH, "//div[contains(@class, 'sc-fYsHOw dMtDzI')]//p[contains(text(), 'Email Status')]/following-sibling::div[contains(@class, 'sc-Qotzb dnVSuG')]//span")
-                email_status_text = email_status_element.text.strip()
-                email_status = email_status_text if email_status_text in ["Valid", "Invalid", "Catch-All", "Unknown", "Pending"] else email_status
-            except:
-                logging.info(f"Email Status not found for {email}")
-
-            # Extract Email Syntax Format
-            try:
-                syntax_status_element = driver.find_element(By.XPATH, "//div[contains(@class, 'sc-fYsHOw dMtDzI')]//p[contains(text(), 'Email Syntax')]/following-sibling::div[contains(@class, 'sc-iQQCXo dXoCvN')]")
-                syntax_status = syntax_status_element.text.strip()
-                if syntax_status not in ["Valid", "Invalid"]:
-                    syntax_status = None
-            except:
-                logging.info(f"Email Syntax Format not found for {email}")
-
-            # Extract Mailbox Server Status
-            try:
-                server_status_element = driver.find_element(By.XPATH, "//div[contains(@class, 'sc-fYsHOw dMtDzI')]//p[contains(text(), 'Mailbox Server')]/following-sibling::div[contains(@class, 'sc-iQQCXo dXoCvN')]")
-                server_status = server_status_element.text.strip()
-                if server_status not in ["Valid", "Invalid"]:
-                    server_status = None
-            except:
-                logging.info(f"Mailbox Server Status not found for {email}")
-
-            logging.info(f"Verification results for {email}: Email Status={email_status}, Syntax Format={syntax_status}, Server Status={server_status}")
-            return email_status, syntax_status, server_status, tor_process
+            logging.info(f"Verification result for {email}: Email Status={email_status}")
+            return email_status, tor_process
 
         except (Urllib3NewConnectionError, WebDriverException) as e:
             logging.error(f"Attempt {attempt} failed for {email}: {e}")
             if attempt < max_retries:
-                # logging.info(f"Resetting WebDriver due to connection error for {email}")
-                # try:
-                #     driver.quit()
-                # except WebDriverException as quit_e:
-                #     logging.warning(f"Failed to close WebDriver on connection error: {quit_e}")
-                # driver = setup_chrome_with_tor()
                 time.sleep(retry_delay)
                 continue
             else:
                 logging.warning(f"Max retries reached for {email} after connection error")
-                return None, None, None, tor_process
+                return "connection_error", tor_process
 
     logging.warning(f"Failed to verify email {email} after {max_retries} attempts")
-    return None, None, None, tor_process
+    return "connection_error", tor_process
 
 def process_csv_and_verify_emails(input_csv, output_csv, max_rows=2000, batch_size=50, tor_restart_interval=30, offset=0, delete_invalid=True, job_id=None, step_id='step7'):
     """
-    Processes a CSV file, verifies emails using Skrapp.io, and updates the CSV with Email_Processed, Email Status,
-    Email Syntax Format, Mailbox Server Status, and Verified_Email columns.
+    Processes a CSV file, verifies emails using Skrapp.io, and updates the CSV with Email_Processed and Email Status columns.
     Skips rows already marked as processed (Email_Processed=True).
     Optionally deletes rows where Email Status is "Invalid" after processing.
     Restarts Tor every tor_restart_interval rows among unprocessed rows.
@@ -224,11 +164,10 @@ def process_csv_and_verify_emails(input_csv, output_csv, max_rows=2000, batch_si
             return None
 
         # Initialize columns
-        for col in ['Email Status', 'Email Syntax Format', 'Mailbox Server Status', 'Email_Processed', 'Verified_Email']:
+        for col in ['Email Status', 'Email_Processed']:
             if col not in df.columns:
-                df[col] = "" if col not in ['Email_Processed', 'Verified_Email'] else False
+                df[col] = "" if col == 'Email Status' else False
         df['Email_Processed'] = df['Email_Processed'].map({'True': True, 'False': False, True: True, False: False}).fillna(False)
-        df['Verified_Email'] = df['Verified_Email'].map({'True': True, 'False': False, True: True, False: False}).fillna(False)
         logging.info(f"Found Email_Processed column with {df['Email_Processed'].sum()} processed rows")
 
         # Initialize progress tracking
@@ -294,9 +233,6 @@ def process_csv_and_verify_emails(input_csv, output_csv, max_rows=2000, batch_si
                         logging.info(f"Skipping row {idx + 1}: Invalid or empty email")
                         df.at[idx, 'Email_Processed'] = True
                         df.at[idx, 'Email Status'] = "Invalid"
-                        df.at[idx, 'Email Syntax Format'] = None
-                        df.at[idx, 'Mailbox Server Status'] = None
-                        df.at[idx, 'Verified_Email'] = False
                         df.to_csv(output_csv, index=False)
                         logging.info(f"Saved progress for row {idx + 1} to {output_csv}")
                         write_progress(idx + 1, total_rows + offset, job_id, step_id=step_id)
@@ -305,47 +241,36 @@ def process_csv_and_verify_emails(input_csv, output_csv, max_rows=2000, batch_si
                     # Check if Tor needs restarting
                     if rows_since_last_tor_restart >= tor_restart_interval:
                         logging.info("Restarting Tor process...")
-                        try:
-                            driver.quit()
-                        except WebDriverException as e:
-                            logging.warning(f"Failed to close WebDriver on periodic Tor restart: {e}")
-                        stop_tor(tor_process)
-                        time.sleep(2)
-                        tor_process = start_tor()
-                        time.sleep(10)
-                        driver = setup_chrome_with_tor()
+                        driver, tor_process = restart_driver_and_tor(driver, tor_process, True, False)
                         rows_since_last_tor_restart = 0
                         logging.info("Tor process restarted and new driver initialized")
 
                     logging.info(f"Processing row {idx + 1}/{len(df)}: {email}")
-                    email_status, syntax_status, server_status, tor_process = verify_email_scrapp(email, driver, tor_process)
+                    email_status, tor_process = verify_email_scrapp(email, driver, tor_process)
                     # Handle rate limit
-                    if email_status is None:
+                    if email_status == "search_limit":
                         logging.info(f"Rate limit reached for row {idx + 1}, restarting Tor and retrying")
-                        stop_tor(tor_process)
-                        tor_process = start_tor()
-                        time.sleep(5)
-                        driver.quit()
-                        driver = setup_chrome_with_tor()
+                        driver, tor_process = restart_driver_and_tor(driver, tor_process, True, False)
                         rows_since_last_tor_restart = 0
-                        email_status, syntax_status, server_status, tor_process = verify_email_scrapp(email, driver, tor_process)
+                        email_status, tor_process = verify_email_scrapp(email, driver, tor_process)
 
-                    # Update DataFrame with statuses
+                    # Update DataFrame with status
                     df.at[idx, 'Email Status'] = email_status
-                    df.at[idx, 'Email Syntax Format'] = syntax_status
-                    df.at[idx, 'Mailbox Server Status'] = server_status
-                    df.at[idx, 'Email_Processed'] = email_status is not None
-                    df.at[idx, 'Verified_Email'] = (email_status == "Valid" and syntax_status == "Valid" and server_status == "Valid")
+                    # Set Email_Processed based on status
+                    df.at[idx, 'Email_Processed'] = email_status in ["Valid", "Invalid", "Catch-All"]
+                    if email_status in ["search_limit", "timeout", "connection_error", "no_result"]:
+                        # rows_since_last_tor_restart = 0  # Reset counter for transient errors
+                        pass
+                    else:
+                        rows_since_last_tor_restart += 1
 
-                    rows_since_last_tor_restart += 1
-                    
                     # Reset WebDriver after each verification to prevent stale sessions
                     try:
-                        driver.quit()  # Close WebDriver to avoid memory leaks or stale sessions
+                        driver.quit()
                     except WebDriverException as e:
-                        logging.warning(f"Failed to close WebDriver after verification: {e}")  # Log if quit fails
-                    driver = setup_chrome_with_tor()  # Reinitialize WebDriver for next email
-                    logging.info(f"WebDriver reset for next email verification")  # Log reset for debugging
+                        logging.warning(f"Failed to close WebDriver after verification: {e}")
+                    driver = setup_chrome_with_tor() 
+                    logging.info(f"WebDriver reset for next email verification")
 
                     df.to_csv(output_csv, index=False)
                     logging.info(f"Saved progress for row {idx + 1} to {output_csv}")
@@ -366,7 +291,7 @@ def process_csv_and_verify_emails(input_csv, output_csv, max_rows=2000, batch_si
 
             if not stopped:
                 final_status = "stopped" if check_stop_signal(step_id) else "completed"
-                final_row = total_rows if final_status == "completed" else max(0, min(total_rows, df.index[-1] + 1 if not df.empty else 0))
+                final_row = (total_rows + offset) if final_status == "completed" else max(0, min(total_rows, df.index[-1] + 1 if not df.empty else 0))
                 write_progress(final_row, total_rows + offset, job_id, step_id=step_id, stop_call=(final_status == "stopped"))
 
         if delete_invalid and not stopped:
@@ -394,7 +319,7 @@ def process_csv_and_verify_emails(input_csv, output_csv, max_rows=2000, batch_si
     finally:
         if not stopped:
             final_status = "stopped" if check_stop_signal(step_id) else "completed"
-            final_row = total_rows if final_status == "completed" else max(0, min(total_rows, df.index[-1] + 1 if not df.empty else 0))
+            final_row = (total_rows + offset) if final_status == "completed" else max(0, min(total_rows, df.index[-1] + 1 if not df.empty else 0))
             write_progress(final_row, total_rows + offset, job_id, step_id=step_id, stop_call=(final_status == "stopped"))
 
 if __name__ == "__main__":

@@ -26,3 +26,6 @@ config/tor/
 config/chrome_profiles/
 # VS Code workspace file
 outreach_system.code-workspace
+
+test2.py
+testfile.py

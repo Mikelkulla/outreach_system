@@ -321,7 +321,7 @@ def process_csv_and_find_emails(input_csv, output_csv, max_rows=2000, batch_size
             # Only write final progress if not already stopped
             if not stopped:
                 final_status = "stopped" if check_stop_signal(step_id) else "completed"
-                final_row = total_rows if final_status == "completed" else max(0, min(total_rows, df.index[-1] + 1 if not df.empty else 0))
+                final_row = (total_rows + offset) if final_status == "completed" else max(0, min(total_rows, df.index[-1] + 1 if not df.empty else 0))
                 write_progress(final_row, total_rows + offset, job_id, step_id=step_id, stop_call=(final_status == "stopped"))
 
         # Delete only rows with Status == "no_result" if delete_no_email is True
