@@ -9,6 +9,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from backend.scripts.selenium.driver_setup_for_scrape import setup_chrome_with_tor, start_tor, stop_tor
 from backend.config import Config
+from config.logging import setup_logging
 from config.job_functions import write_progress, check_stop_signal
 from config.utils import load_csv
 
@@ -39,7 +40,7 @@ def find_email(full_name, company_name, driver, tor_process=None, max_retries=2,
                 if tor_process:
                     stop_tor(tor_process)
                 tor_process = start_tor()
-                time.sleep(5)  # Wait for Tor to initialize
+                time.sleep(5)
                 driver.quit()
                 driver = setup_chrome_with_tor()
                 driver.get("https://skrapp.io/email-finder")
@@ -100,22 +101,24 @@ def find_email(full_name, company_name, driver, tor_process=None, max_retries=2,
                         By.XPATH, "//*[contains(text(), 'No result found!') or contains(@class, 'css-17x39hc') or contains(text(),'Search limit reached!') or contains(@class, 'css-1buerh9')]"
                     ))
                 )
-                logging.info(f"Found Result element")
+                logging.info(f"Found result element")
             except:
                 logging.warning(f"Timeout waiting for result for {full_name} at {company_name}")
 
             # Check for "Search limit reached!" or "No result found!" message
             try:
-                no_result_element = driver.find_element(By.XPATH, "//*[contains(text(), 'No result found!') or contains(text(), 'Search limit reached!') ]")
-                if no_result_element:
-                    message_text = no_result_element.text.strip()
+                no_result_element = driver.find_element(By.XPATH, "//*[contains(text(), 'No result found!') or contains(text(), 'Search limit reached!')]")
+                message_text = no_result_element.text.strip()
+                try:
                     limit_reached_element = driver.find_element(By.CSS_SELECTOR, ".MuiTypography-root.css-15kkj6n")
                     message_text_2 = limit_reached_element.text.strip()
-                    if "Search limit reached!" in message_text or "Search limit reached!" in message_text_2:
-                        return None, "search_limit", tor_process  # MODIFIED: Return "search_limit" status
-                    elif "No result found!" in message_text:
-                        logging.info(f"No result found for {full_name} at {company_name}")
-                        return None, "no_result", tor_process  # MODIFIED: Return "no_result" status
+                except:
+                    message_text_2 = ""
+                if "Search limit reached!" in message_text or "Search limit reached!" in message_text_2:
+                    return None, "search_limit", tor_process
+                elif "No result found!" in message_text:
+                    logging.info(f"No result found for {full_name} at {company_name}")
+                    return None, "no_result", tor_process
             except:
                 pass
 
@@ -128,15 +131,14 @@ def find_email(full_name, company_name, driver, tor_process=None, max_retries=2,
                 logging.info(email)
 
                 if not email or "@" not in email:
-                    email = None
                     logging.info(f"No valid email found for {full_name} at {company_name}")
-                    return None, "no_result", tor_process  # MODIFIED: Return "no_result" status
+                    return None, "no_result", tor_process
                 else:
                     logging.info(f"Found email for {full_name}: {email}")
-                    return email, "found", tor_process  # MODIFIED: Return "found" status
+                    return email, "found", tor_process
             except:
                 logging.info(f"No email element found for {full_name} at {company_name}")
-                return None, "no_result", tor_process  # MODIFIED: Return "no_result" status
+                return None, "no_result", tor_process
 
         except Exception as e:
             logging.error(f"Attempt {attempt} failed for {full_name} at {company_name}: {e}")
@@ -145,7 +147,7 @@ def find_email(full_name, company_name, driver, tor_process=None, max_retries=2,
             continue
 
     logging.warning(f"Failed to find email for {full_name} at {company_name} after {max_retries} attempts")
-    return None, "no_result", tor_process  # MODIFIED: Default to "no_result" on failure
+    return None, "no_result", tor_process
 
 def process_csv_and_find_emails(input_csv, output_csv, max_rows=2000, batch_size=50, tor_restart_interval=30, offset=0, delete_no_email=True, job_id=None, step_id='step6'):
     """
@@ -176,8 +178,8 @@ def process_csv_and_find_emails(input_csv, output_csv, max_rows=2000, batch_size
         )
         if df is None:
             return None
-        
-        # Initialize Status column
+
+        # Initialize Status columns
         if 'Email' not in df.columns:
             df['Email'] = ""
         if 'Status' not in df.columns:
@@ -252,7 +254,7 @@ def process_csv_and_find_emails(input_csv, output_csv, max_rows=2000, batch_size
                     if not website or website == "None":
                         logging.warning(f"Skipping row {idx + 1}: No valid website for {full_name}")
                         df.at[idx, 'Email'] = ""
-                        df.at[idx, 'Status'] = "no_result"  # Set Status to "no_result"
+                        df.at[idx, 'Status'] = "no_result"
                         df.to_csv(output_csv, index=False)
                         logging.info(f"Saved progress for row {idx + 1} to {output_csv}")
                         write_progress(idx + 1, total_rows + offset, job_id, step_id=step_id)
@@ -272,7 +274,7 @@ def process_csv_and_find_emails(input_csv, output_csv, max_rows=2000, batch_size
                         logging.info("Tor process restarted and new driver initialized")
 
                     logging.info(f"Processing row {idx + 1}/{len(df)}: {full_name} at {website}")
-                    email, status, tor_process = find_email(full_name, website, driver, tor_process)  # MODIFIED: Receive status
+                    email, status, tor_process = find_email(full_name, website, driver, tor_process)
 
                     # Handle search limit reached
                     if status == "search_limit":
@@ -287,7 +289,7 @@ def process_csv_and_find_emails(input_csv, output_csv, max_rows=2000, batch_size
                         time.sleep(1)
                         rows_since_last_tor_restart = 0
                         # Retry the same row
-                        email, status, tor_process = find_email(full_name, website, driver, tor_process)  # MODIFIED: Retry with status
+                        email, status, tor_process = find_email(full_name, website, driver, tor_process)
 
                     df.at[idx, 'Email'] = email if email and status != "search_limit" else ""
                     df.at[idx, 'Status'] = status  # MODIFIED: Set Status column
@@ -354,7 +356,7 @@ def process_csv_and_find_emails(input_csv, output_csv, max_rows=2000, batch_size
 # Example usage
 if __name__ == "__main__":
     input_path = os.path.join(Config.DATA_CSV_PATH, "domain_about")
-    input_csv = "Test_3.csv"
+    input_csv = "Test_10.csv"
     output_path = os.path.join(Config.DATA_CSV_PATH, "emails")
     process_csv_and_find_emails(
         input_csv=os.path.join(input_path, f"DomainAbout_Updated_Name_Filtered_{input_csv}"),

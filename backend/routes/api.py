@@ -7,7 +7,6 @@ from backend.config import Config
 from backend.scripts.sales_navigator_scrape.navigators_scrape_companyID import parse_sales_navigator
 from backend.scripts.sales_navigator_scrape.remove_empty_companyurl import remove_empty_company_rows
 from backend.scripts.openai.correctname_finder import process_csv
-# from backend.scripts.sales_navigator_scrape.update_company_urls_with_school_fix import process_csv_and_update_urls
 from backend.scripts.sales_navigator_scrape.extract_company_about_website import process_csv_and_extract_info
 from backend.scripts.sales_navigator_scrape.email_finder import process_csv_and_find_emails
 from backend.scripts.sales_navigator_scrape.verify_emails import process_csv_and_verify_emails

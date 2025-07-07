@@ -1,4 +1,3 @@
-import pandas as pd
 import logging
 import os
 from backend.config import Config

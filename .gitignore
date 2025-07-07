@@ -7,7 +7,12 @@ __pycache__/
 # Environment files
 .env
 venv
+.gitignore
 
+# Test Files
+backend/scripts/sales_navigator_scrape/testfile.py
+testfile.py
+test2.py
 
 # Log files
 *.log
@@ -24,6 +29,7 @@ backend/temp/
 config/drivers/
 config/tor/
 config/chrome_profiles/
+
 # VS Code workspace file
 outreach_system.code-workspace
 

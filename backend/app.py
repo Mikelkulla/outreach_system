@@ -23,5 +23,5 @@ def index():
 
 if __name__ == "__main__":
     setup_logging()
-    print("Running on http://192.168.1.52:5000")
+    print("Running on http://localhost:5000")
     app.run(debug=True, host="0.0.0.0", port=5000)

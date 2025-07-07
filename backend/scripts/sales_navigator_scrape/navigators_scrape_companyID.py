@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 import logging
 from backend.config import Config
-from config.logging import setup_logging
+
 # Define the fields to extract
 fields = [
     "Email", "Full Name", "First Name", "Last Name", "Company Name", "Title",

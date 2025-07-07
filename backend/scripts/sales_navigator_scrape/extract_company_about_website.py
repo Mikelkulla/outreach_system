@@ -1,24 +1,17 @@
-import json
 import uuid
 import pandas as pd
 import time
 import random
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import WebDriverException, TimeoutException
-import sys
+from selenium.common.exceptions import TimeoutException
 import os
 import logging
-from datetime import datetime
 from urllib.parse import urlparse, parse_qs, unquote
 import tldextract
-from backend.scripts.selenium.driver_setup_for_scrape import kill_chrome_processes, restart_driver_and_tor, setup_driver, setup_driver_linkedin_singin
-from backend.config import Config  # Import Config for path management
-from config.logging import setup_logging
+from backend.scripts.selenium.driver_setup_for_scrape import restart_driver_and_tor, setup_driver_linkedin_singin
+from backend.config import Config
 from config.job_functions import write_progress, check_stop_signal
 from config.utils import load_csv
 
