@@ -73,36 +73,44 @@ def find_email(full_name, company_name, driver, tor_process=None, max_retries=2,
 
             # Handle autocomplete if present
             try:
-                WebDriverWait(driver, 5).until(
-                    EC.presence_of_element_located((By.CLASS_NAME, "MuiAutocomplete-option"))
+                WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "MuiAutocomplete-option.css-146xefr"))
                 )
-                autocomplete_option = driver.find_element(By.CLASS_NAME, "MuiAutocomplete-option")
+                autocomplete_option = driver.find_element(By.CLASS_NAME, "MuiAutocomplete-option.css-146xefr")
                 autocomplete_option.click()
+                time.sleep(random.uniform(0.5, 1))
             except:
                 pass  # No autocomplete or no options found
 
             # Click Find Email button
             find_button = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, ".MuiTypography-root.css-ekhccu"))
+                EC.element_to_be_clickable((By.CSS_SELECTOR, ".MuiTypography-root.css-1ulaxtk"))
             )
             try:
+                time.sleep(random.uniform(1, 3))
                 find_button.click()
+                time.sleep(random.uniform(3, 5))
             except:
                 driver.execute_script("arguments[0].click();", find_button)
+                time.sleep(random.uniform(3, 5))
 
             # Wait for either email result, "no result" message, or "search limit reached" message
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((
-                    By.XPATH, "//*[contains(text(),'No result found!') or contains(@class, 'css-1gotp7m') or contains(text(),'Search limit reached!') or contains(@class, 'css-1buerh9')]"
-                ))
-            )
+            try:
+                WebDriverWait(driver, 8).until(
+                    EC.presence_of_element_located((
+                        By.XPATH, "//*[contains(text(), 'No result found!') or contains(@class, 'css-17x39hc') or contains(text(),'Search limit reached!') or contains(@class, 'css-1buerh9')]"
+                    ))
+                )
+                logging.info(f"Found Result element")
+            except:
+                logging.warning(f"Timeout waiting for result for {full_name} at {company_name}")
 
             # Check for "Search limit reached!" or "No result found!" message
             try:
                 no_result_element = driver.find_element(By.XPATH, "//*[contains(text(), 'No result found!') or contains(text(), 'Search limit reached!') ]")
                 if no_result_element:
                     message_text = no_result_element.text.strip()
-                    limit_reached_element = driver.find_element(By.CSS_SELECTOR, ".MuiTypography-root.css-aulkoc")
+                    limit_reached_element = driver.find_element(By.CSS_SELECTOR, ".MuiTypography-root.css-15kkj6n")
                     message_text_2 = limit_reached_element.text.strip()
                     if "Search limit reached!" in message_text or "Search limit reached!" in message_text_2:
                         # logging.warning(f"Search limit reached for {full_name} at {company_name}. Restarting Tor...")
@@ -127,8 +135,12 @@ def find_email(full_name, company_name, driver, tor_process=None, max_retries=2,
 
             # Try to extract email
             try:
-                email_element = driver.find_element(By.CSS_SELECTOR, ".MuiTypography-root.css-1gotp7m")
+                logging.info("Getting Email")
+                email_element = driver.find_element(By.XPATH, "//p[contains(@class, 'css-17x39hc')]")
+                logging.debug(email_element)
                 email = email_element.text.strip()
+                logging.info(email)
+
                 if not email or "@" not in email:
                     email = None
                     logging.info(f"No valid email found for {full_name} at {company_name}")
@@ -350,7 +362,7 @@ def process_csv_and_find_emails(input_csv, output_csv, max_rows=2000, batch_size
     finally:
         if not stopped:
             final_status = "stopped" if check_stop_signal(step_id) else "completed"
-            final_row = total_rows if final_status == "completed" else max(0, min(total_rows, df.index[-1] + 1 if not df.empty else 0))
+            final_row = (total_rows + offset) if final_status == "completed" else max(0, min(total_rows, df.index[-1] + 1 if not df.empty else 0))
             write_progress(final_row, total_rows + offset, job_id, step_id=step_id, stop_call=(final_status == "stopped"))
 
 # Example usage
