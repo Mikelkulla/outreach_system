@@ -113,20 +113,7 @@ def find_email(full_name, company_name, driver, tor_process=None, max_retries=2,
                     limit_reached_element = driver.find_element(By.CSS_SELECTOR, ".MuiTypography-root.css-15kkj6n")
                     message_text_2 = limit_reached_element.text.strip()
                     if "Search limit reached!" in message_text or "Search limit reached!" in message_text_2:
-                        # logging.warning(f"Search limit reached for {full_name} at {company_name}. Restarting Tor...")
-                        # if tor_process:
-                        #     stop_tor(tor_process)
-                        # tor_process = start_tor()
-                        # time.sleep(5)  # Wait for Tor to initialize
-                        # driver.quit()
-                        # time.sleep(2)  # Wait for Tor to initialize                        
-                        # driver = setup_chrome_with_tor()
-                        # if attempt < max_retries:
-                        #     logging.info(f"Retrying after Tor restart for {full_name} at {company_name}")
-                        #     continue
-                        # else:
-                        #     logging.warning(f"Max retries reached after search limit for {full_name} at {company_name}")
-                            return None, "search_limit", tor_process  # MODIFIED: Return "search_limit" status
+                        return None, "search_limit", tor_process  # MODIFIED: Return "search_limit" status
                     elif "No result found!" in message_text:
                         logging.info(f"No result found for {full_name} at {company_name}")
                         return None, "no_result", tor_process  # MODIFIED: Return "no_result" status
