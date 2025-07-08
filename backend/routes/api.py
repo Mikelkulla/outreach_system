@@ -241,7 +241,7 @@ def run_step(step):
                     if result_df is None:
                         update_job_status(5, job_id, "failed")
                         # Optionally, write more detailed error to a specific file.
-                        with open(os.path.join(Config.TEMP_PATH, f"step5_error{job_id}.txt"), "w") as f:
+                        with open(os.path.join(Config.TEMP_PATH, f"step5_error_{job_id}.txt"), "w") as f:
                             f.write(f"Step 5 execution failed, Job Id: {job_id}")
                 except Exception as e:
                     update_job_status(5, job_id, "failed")
@@ -311,7 +311,7 @@ def run_step(step):
                     )
                     if result_df is None:
                         update_job_status(6, job_id, "failed")
-                        with open(os.path.join(Config.TEMP_PATH, f"step6_error{job_id}.txt"), "w") as f:
+                        with open(os.path.join(Config.TEMP_PATH, f"step6_error_{job_id}.txt"), "w") as f:
                             f.write(f"Step 6 execution failed, Job Id: {job_id}")
                 except Exception as e:
                     update_job_status(6, job_id, "failed")
@@ -379,7 +379,7 @@ def run_step(step):
                     )
                     if result_df is None:
                         update_job_status(7, job_id, "failed")
-                        with open(os.path.join(Config.TEMP_PATH, f"step7_error{job_id}.txt"), "w") as f:
+                        with open(os.path.join(Config.TEMP_PATH, f"step7_error_{job_id}.txt"), "w") as f:
                             f.write(f"Step 7 execution failed, Job Id: {job_id}")
                 except Exception as e:
                     update_job_status(7, job_id, "failed")
