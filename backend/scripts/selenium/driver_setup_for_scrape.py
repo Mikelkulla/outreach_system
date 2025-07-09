@@ -27,36 +27,83 @@ def restart_driver_and_tor(driver, tor_process, use_tor=False, linkedin=False, c
         tuple: (new_driver, new_tor_process) where new_driver is the new WebDriver instance
                and new_tor_process is the new Tor process (or None if use_tor is False).
     """
-    # Close the existing WebDriver
+    # --- Step 1: Close the existing WebDriver ---
     if driver is not None:
         try:
+            logging.info("Attempting to close existing WebDriver...")
             driver.quit()
-            time.sleep(2)
-            logging.info("WebDriver closed successfully")
+            time.sleep(2) # Adding a small delay to ensure resources are freed
+            logging.info("WebDriver closed successfully.")
         except WebDriverException as e:
-            logging.warning(f"Failed to close WebDriver: {e}")
+            logging.warning(f"Encountered an issue while closing WebDriver: {e}")
+        except Exception as e: # Catch any other potential exceptions during quit
+            logging.error(f"Unexpected error while closing WebDriver: {e}")
     
-    # Stop the Tor process if applicable
-    new_tor_process = None
-    if use_tor and tor_process is not None:
-        stop_tor(tor_process)
-        time.sleep(5)  # Wait for Tor to shut down completely
-        new_tor_process = start_tor(tor_path)
-        time.sleep(5)  # Wait for new Tor process to initialize
-        logging.info("Tor process restarted successfully")
+    # --- Step 2: Handle Tor Process (Stop if running, then restart if use_tor is True) ---
+    new_tor_process = tor_process # Assume we might reuse the existing process if not using Tor or if it's None
 
-    # Initialize new WebDriver
+    if use_tor:
+        if tor_process is not None:
+            logging.info("Attempting to stop existing Tor process...")
+            stop_tor(tor_process)
+            # Consider adding a check here to confirm Tor has stopped before proceeding
+            time.sleep(5)  # Wait for Tor to shut down completely
+            logging.info("Existing Tor process stopped.")
+        else:
+            logging.info("No existing Tor process to stop.")
+            
+        logging.info("Attempting to start a new Tor process...")
+        new_tor_process = start_tor(tor_path)
+        if new_tor_process:
+            # Consider adding a check here to confirm Tor has started successfully
+            time.sleep(5)  # Wait for new Tor process to initialize
+            logging.info("New Tor process started successfully.")
+        else:
+            logging.error("Failed to start a new Tor process. WebDriver will be initialized without Tor.")
+            # Decide if you want to proceed without Tor or return an error
+            # For now, it will proceed and try to start WebDriver without Tor if setup_chrome_with_tor handles it,
+            # or rely on the subsequent driver setup logic.
+    else:
+        # If not using Tor, ensure any existing Tor process is stopped if it was managed by this scope.
+        # However, the current logic implies tor_process is only passed if use_tor was true for its creation.
+        # If new_tor_process was from a previous run that used Tor, and now use_tor is False,
+        # it should ideally be stopped.
+        # For simplicity, we'll assume tor_process is managed consistently with use_tor.
+        # If tor_process is not None here, it means it was passed in but use_tor is now False.
+        # It's safer to stop it if it's running.
+        if tor_process is not None:
+            logging.info("use_tor is False, ensuring any existing managed Tor process is stopped.")
+            stop_tor(tor_process)
+            new_tor_process = None # Tor is not used, so no process to return
+            logging.info("Existing Tor process stopped as use_tor is False.")
+
+    # --- Step 3: Initialize new WebDriver ---
     new_driver = None
     try:
-        if use_tor:
+        logging.info(f"Initializing new WebDriver. use_tor: {use_tor}, linkedin: {linkedin}")
+        if use_tor and new_tor_process: # Only use Tor setup if Tor actually started
             new_driver = setup_chrome_with_tor(chromedriver_path, headless=headless)
+            logging.info("WebDriver initialized with Tor configuration.")
         elif linkedin:
             new_driver = setup_driver_linkedin_singin(chromedriver_path, headless=headless)
+            logging.info("WebDriver initialized with LinkedIn profile configuration.")
         else:
             new_driver = setup_driver(chromedriver_path, headless=headless)
-        logging.info("New WebDriver initialized successfully")
+            logging.info("WebDriver initialized with standard configuration.")
+        
+        if new_driver:
+            logging.info("New WebDriver initialized successfully.")
+        else:
+            # This case might occur if setup functions return None without raising an exception
+            logging.error("WebDriver initialization returned None, but no exception was raised.")
+            # new_tor_process is returned as is, which is correct.
+            return None, new_tor_process
+        
     except Exception as e:
         logging.error(f"Failed to initialize new WebDriver: {e}")
+        # If driver initialization fails, we return None for the driver.
+        # The new_tor_process (which could be None or a running process) is returned.
+        # This allows the caller to manage the Tor process if needed, even if driver setup failed.
         return None, new_tor_process
 
     return new_driver, new_tor_process

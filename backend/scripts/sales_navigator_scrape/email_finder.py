@@ -7,7 +7,7 @@ import os
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from backend.scripts.selenium.driver_setup_for_scrape import setup_chrome_with_tor, start_tor, stop_tor
+from backend.scripts.selenium.driver_setup_for_scrape import restart_driver_and_tor, setup_chrome_with_tor, start_tor, stop_tor
 from backend.config import Config
 from config.job_functions import write_progress, check_stop_signal
 from config.utils import load_csv
@@ -261,13 +261,7 @@ def process_csv_and_find_emails(input_csv, output_csv, max_rows=2000, batch_size
                     # Check if Tor needs restarting
                     if rows_since_last_tor_restart >= tor_restart_interval:
                         logging.info("Restarting Tor process...")
-                        driver.quit()
-                        time.sleep(1)
-                        stop_tor(tor_process)
-                        time.sleep(3)
-                        tor_process = start_tor()
-                        time.sleep(5)
-                        driver = setup_chrome_with_tor()
+                        driver, tor_process = restart_driver_and_tor(driver, tor_process, True, False)
                         rows_since_last_tor_restart = 0
                         logging.info("Tor process restarted and new driver initialized")
 
@@ -277,14 +271,7 @@ def process_csv_and_find_emails(input_csv, output_csv, max_rows=2000, batch_size
                     # Handle search limit reached
                     if status == "search_limit":
                         logging.info(f"Search limit reached for row {idx + 1}, restarting Tor and retrying")
-                        driver.quit()
-                        time.sleep(2)
-                        stop_tor(tor_process)
-                        time.sleep(2)
-                        tor_process = start_tor()
-                        time.sleep(5)
-                        driver = setup_chrome_with_tor()
-                        time.sleep(1)
+                        driver, tor_process = restart_driver_and_tor(driver, tor_process, True, False)
                         rows_since_last_tor_restart = 0
                         # Retry the same row
                         email, status, tor_process = find_email(full_name, website, driver, tor_process)  # MODIFIED: Retry with status
