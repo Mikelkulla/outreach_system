@@ -1,19 +1,13 @@
 import pandas as pd
 import time
 import random
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import WebDriverException
 import sys
 import os
 import logging
 import json
-from datetime import datetime
 from backend.config import Config
-from backend.scripts.selenium.driver_setup_for_scrape import setup_driver_linkedin_singin, start_tor, stop_tor
-from config.logging import setup_logging
+from backend.scripts.selenium.driver_setup_for_scrape import setup_driver_linkedin_singin
 from config.utils import load_csv
 
 # Function to check for stop signal

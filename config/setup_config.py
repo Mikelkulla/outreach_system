@@ -1,1 +1,0 @@
-# Script to help users configure paths

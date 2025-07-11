@@ -267,7 +267,7 @@ def stop_tor(tor_process):
                 child.kill()
             parent.kill()
         except Exception as e:
-            print(f"Error stopping Tor: {e}")
+            logging.error(f"Error stopping Tor: {e}")
 
 def restart_tor(tor_process, tor_path=Config.TOR_EXECUTABLE):
     """

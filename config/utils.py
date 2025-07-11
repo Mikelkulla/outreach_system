@@ -2,7 +2,6 @@
 import pandas as pd
 import os
 import logging
-from backend.config import Config
 
 def load_csv(input_csv, output_csv, required_columns=None):
     """

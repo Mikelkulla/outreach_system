@@ -3,8 +3,6 @@ import time
 import random
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import WebDriverException
 import sys
 import os
