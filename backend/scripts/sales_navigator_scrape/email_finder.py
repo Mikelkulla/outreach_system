@@ -1,5 +1,4 @@
 import uuid
-import pandas as pd
 import time
 import random
 import logging
