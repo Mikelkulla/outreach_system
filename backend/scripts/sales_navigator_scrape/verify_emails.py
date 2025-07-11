@@ -118,11 +118,11 @@ def verify_email_scrapp(email, driver, tor_process=None, max_retries=2, retry_de
                 EC.presence_of_element_located((By.NAME, SKRAPP_EMAIL_INPUT_NAME))
             )
 
-            time.sleep(random.uniform(0.5, 1.5))
+            time.sleep(random.uniform(0.5, 1))
             email_field.clear()
             time.sleep(random.uniform(0.2, 0.8))
             email_field.send_keys(email)
-            time.sleep(random.uniform(0.5, 1.5))
+            time.sleep(random.uniform(0.5, 1))
             
             # Locate and click the "Verify Email" button
             verify_button = WebDriverWait(driver, 10).until(
@@ -153,7 +153,7 @@ def verify_email_scrapp(email, driver, tor_process=None, max_retries=2, retry_de
             # Check specifically for "Too many requests sent" message (rate limiting)
             try:
                 # Short wait for this specific message, as it might appear quickly.
-                limit_element = WebDriverWait(driver, 2).until(
+                limit_element = WebDriverWait(driver, 7).until(
                     EC.presence_of_element_located((By.XPATH, SKRAPP_RATE_LIMIT_TEXT_XPATH))
                 )
                 if limit_element: # Element found
@@ -169,7 +169,7 @@ def verify_email_scrapp(email, driver, tor_process=None, max_retries=2, retry_de
             for status_constant, xpath_pattern in VERIFICATION_MESSAGE_XPATHS:
                 try:
                     # Short timeout for finding status messages, page should be loaded.
-                    WebDriverWait(driver, 5).until(
+                    WebDriverWait(driver, 13).until(
                         EC.presence_of_element_located((By.XPATH, xpath_pattern))
                     )                    
                     email_status_found = status_constant # Use the constant from the tuple
