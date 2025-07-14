@@ -22,7 +22,8 @@ class Config:
     DOMAIN_ABOUT_PATH = os.path.join(DATA_CSV_PATH, "domain_about")
     EMAILS_PATH = os.path.join(DATA_CSV_PATH, "emails")
     VERIFIED_EMAILS_PATH = os.path.join(DATA_CSV_PATH, "verified")
-    
+    ICEBREAKERS_PATH = os.path.join(DATA_CSV_PATH, "icebreakers")
+
     # Tor configuration
     TOR_BASE_PATH = os.path.join(ROOT_DIR, "config", "tor")
     OS_TYPE = platform.system().lower()
@@ -70,6 +71,8 @@ class Config:
             Config.DOMAIN_ABOUT_PATH,
             Config.EMAILS_PATH,
             Config.VERIFIED_EMAILS_PATH,
+            Config.ICEBREAKERS_PATH,
+            
             Config.CHROME_PROFILE_BASE_PATH,
 
             os.path.join(Config.ROOT_DIR, "config", "drivers", "chromedriver-win64"),

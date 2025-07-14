@@ -10,6 +10,7 @@ from backend.scripts.openai.correctname_finder import process_csv
 from backend.scripts.sales_navigator_scrape.extract_company_about_website import process_csv_and_extract_info
 from backend.scripts.sales_navigator_scrape.email_finder import process_csv_and_find_emails
 from backend.scripts.sales_navigator_scrape.verify_emails import process_csv_and_verify_emails
+from backend.scripts.openai.icebreaker_generator import process_csv_and_generate_icebreaker
 
 api_bp = Blueprint("api", __name__)
 
@@ -18,7 +19,7 @@ def update_job_status(step, job_id, status):
     Updates the status of a job in the jobs_stepX.json file.
     
     Parameters:
-        step (int): Step number (5, 6, or 7).
+        step (int): Step number (5, 6, 7, or 8).
         job_id (str): UUID of the job.
         status (str): New status ('running', 'completed', or 'stopped').
     """
@@ -83,12 +84,11 @@ def run_step(step):
     Main endpoint to trigger various data processing steps.
     The behavior depends on the 'step' number provided in the URL.
     Steps 1, 2, 3 are synchronous.
-    Steps 5, 6, 7 are asynchronous, run in background threads, and their status can be tracked.
+    Steps 5, 6, 7, 8 are asynchronous, run in background threads, and their status can be tracked.
     """
     try:
         # Step 1: Parse Sales Navigator HTML content to extract company IDs.
         if step == 1:
-
             # Expect JSON with HTML content and output filename
             data = request.get_json()
             if not data or "html_content" not in data or "output_file" not in data:
@@ -194,7 +194,7 @@ def run_step(step):
             input_csv = data["input_csv"]
             max_rows = data.get("max_rows", 2000)                           # Default max rows to process
             batch_size = data.get("batch_size", 100)                        # Default batch size for processing
-            delete_no_website = data.get("delete_no_website", True)         # Option to delete rows without websites
+            delete_no_website = data.get("delete_no_website", False)         # Option to delete rows without websites
             offset = data.get("offset", 0)                                  # Row offset to start processing from
 
             output_csv = f"DomainAbout_{input_csv}"
@@ -266,7 +266,7 @@ def run_step(step):
             input_csv = data["input_csv"]
             max_rows = data.get("max_rows", 2000)
             batch_size = data.get("batch_size", 50)
-            delete_no_email = data.get("delete_no_email", True)
+            delete_no_email = data.get("delete_no_email", False)
             offset = data.get("offset", 0)
             tor_restart_interval = data.get("tor_restart_interval", 30) # Parameter for Tor network usage
 
@@ -334,7 +334,7 @@ def run_step(step):
             input_csv = data["input_csv"]
             max_rows = data.get("max_rows", 2000)
             batch_size = data.get("batch_size", 50)
-            delete_invalid = data.get("delete_invalid", True) # Option to delete invalid emails
+            delete_invalid = data.get("delete_invalid", False) # Option to delete invalid emails
             offset = data.get("offset", 0)
             tor_restart_interval = data.get("tor_restart_interval", 30)
 
@@ -375,7 +375,7 @@ def run_step(step):
                         offset=offset,
                         delete_invalid=delete_invalid,
                         job_id=job_id,
-                        step_id='step7' # step_id might be used by the script for specific logic/logging
+                        step_id='step7'
                     )
                     if result_df is None:
                         update_job_status(7, job_id, "failed")
@@ -391,6 +391,76 @@ def run_step(step):
                 "status": "started",
                 "job_id": job_id
             }), 200
+
+        # Step 8: Generate personalized icebreakers (Asynchronous).
+        elif step == 8:
+            data = request.get_json()
+            if not data or "input_csv" not in data:
+                return jsonify({"error": "Missing input_csv for Step 8"}), 400
+
+            # Extract parameters.
+            input_csv = data["input_csv"]
+            max_rows = data.get("max_rows", 2000)
+            batch_size = data.get("batch_size", 50)
+            agent_prompt = data.get("agent_prompt", "default_agent")
+            delete_no_icebreaker = data.get("delete_no_icebreaker", False)
+            offset = data.get("offset", 0)
+
+            output_csv = f"Icebreaker_{input_csv}"
+            # Input from 'verified_emails' folder, output to 'icebreakers' folder.
+            input_path = os.path.join(Config.VERIFIED_EMAILS_PATH, input_csv)
+            output_path = os.path.join(Config.ICEBREAKERS_PATH, output_csv)
+            job_id = str(uuid.uuid4())
+
+            stop_file = os.path.join(Config.TEMP_PATH, "stop_step8.txt")
+            if os.path.exists(stop_file):
+                os.remove(stop_file)
+
+            # Record job metadata in jobs_step8.json.
+            jobs_file = os.path.join(Config.TEMP_PATH, "jobs_step8.json")
+            os.makedirs(Config.TEMP_PATH, exist_ok=True)
+            jobs = []
+            if os.path.exists(jobs_file):
+                with open(jobs_file, "r") as f:
+                    jobs = json.load(f)
+            jobs.append({
+                "job_id": job_id,
+                "input_csv": input_csv,
+                "output_csv": output_csv,
+                "status": "running"
+            })
+            with open(jobs_file, "w") as f:
+                json.dump(jobs, f, indent=2)
+            
+            # Define the threaded function.
+            def run_step8_async():
+                try:
+                    result_df = process_csv_and_generate_icebreaker(
+                        input_csv=input_path,
+                        output_csv=output_path,
+                        max_rows=max_rows,
+                        batch_size=batch_size,
+                        agent_prompt=agent_prompt,
+                        delete_no_icebreaker=delete_no_icebreaker,
+                        offset=offset,
+                        job_id=job_id,
+                        step_id='step8'
+                    )
+                    if result_df is None:
+                        update_job_status(8, job_id, "failed")
+                        with open(os.path.join(Config.TEMP_PATH, f"step8_error_{job_id}.txt"), "w") as f:
+                            f.write(f"Step 8 execution failed, Job Id: {job_id}")
+
+                except Exception as e:
+                    update_job_status(8, job_id, "failed")
+                    print(f"Error in Step 8 job {job_id}: {e}")
+            
+            threading.Thread(target=run_step8_async, daemon=True).start()
+            return jsonify({
+                "message": f"Step 8 (Generate Icebreakers) started. Output will be saved to {output_path}",
+                "status": "started",
+                "job_id": job_id
+            }), 200
         
         else:
             # Handle invalid step numbers.
@@ -402,7 +472,7 @@ def run_step(step):
 @api_bp.route("/stop/<int:step>", methods=["POST"])
 def stop_step(step):
     """
-    Stops a running asynchronous job for steps 5, 6, or 7.
+    Stops a running asynchronous job for steps 5, 6, 7, or 8.
     It creates a 'stop_stepX.txt' signal file that the background script should check.
     It also updates the job's status in the jobs_stepX.json and progress files.
     """
@@ -411,7 +481,7 @@ def stop_step(step):
     jobs_file = os.path.join(Config.TEMP_PATH, f"jobs_step{step}.json")
 
     # Check if the step number is valid for stoppable jobs.
-    if step not in [5, 6, 7]:
+    if step not in [5, 6, 7, 8]:
         return jsonify({"error": f"Step {step} cannot be stopped or is not a valid stoppable step."}), 400
         
     try:
@@ -462,7 +532,7 @@ def get_progress(step):
     """
     job_id = request.args.get("job_id") # Get job_id from query parameters.
 
-    if step not in [5, 6, 7]:
+    if step not in [5, 6, 7, 8]:
         return jsonify({
             "step": step, 
             "job_id": job_id or "N/A", 
@@ -498,7 +568,7 @@ def get_progress(step):
                 "status": "no_job_id_provided"
             }), 400
 
-   # Construct path to the specific job's progress file.
+    # Construct path to the specific job's progress file.
     progress_file = os.path.join(Config.TEMP_PATH, f"progress_step{step}_{job_id}.json")  
 
     try:
@@ -536,8 +606,8 @@ def get_jobs(step):
     Lists all recorded jobs and their statuses for a specific asynchronous step (5, 6, or 7).
     Reads data from the corresponding 'jobs_stepX.json' file.
     """
-    if step not in [5, 6, 7]:
-        return jsonify({"step": step, "jobs": [], "message": "Job tracking only available for steps 5, 6, 7."}), 400
+    if step not in [5, 6, 7, 8]:
+        return jsonify({"step": step, "jobs": [], "message": "Job tracking only available for steps 5, 6, 7, 8."}), 400
 
     jobs_file = os.path.join(Config.TEMP_PATH, f"jobs_step{step}.json")
     try:
