@@ -32,6 +32,9 @@
             <li class="mb-2">
                 <button id="step7" class="w-full text-left p-2 bg-gray-600 rounded cursor-not-allowed" disabled>Step 7: Verify Emails</button>
             </li>
+            <li class="mb-2">
+                <button id="step8" class="w-full text-left p-2 bg-gray-600 rounded cursor-not-allowed" disabled>Step 8: Generate Icebreakers</button>
+            </li>
         </ul>
     </div>
     <!-- Main Content -->
@@ -204,6 +207,45 @@
                 <button id="stop_step7" class="px-4 py-2 bg-gray-600 text-white rounded cursor-not-allowed" disabled>Stop Step 7</button>
             </div>
             <div id="status7" class="mt-4 text-sm text-gray-700"></div>
+        </div>
+        <div id="step8-content" class="mt-8 hidden">
+            <h2 class="text-xl font-semibold mb-4">Step 8: Generate Icebreakers</h2>
+            <div class="mb-4">
+                <label for="job_select_step8" class="block text-sm font-medium text-gray-700">Select Running Job</label>
+                <select id="job_select_step8" class="w-full p-2 border rounded-md">
+                    <option value="">Select a job</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="input_csv8" class="block text-sm font-medium text-gray-700">Select Input CSV</label>
+                <select id="input_csv8" class="w-full p-2 border rounded-md"></select>
+            </div>
+            <div class="mb-4">
+                <label for="max_rows_step8" class="block text-sm font-medium text-gray-700">Maximum Rows to Process (default: 2000)</label>
+                <input type="number" id="max_rows_step8" class="w-full p-2 border rounded-md" value="2000" min="1">
+            </div>
+            <div class="mb-4">
+                <label for="batch_size_step8" class="block text-sm font-medium text-gray-700">Batch Size (default: 50)</label>
+                <input type="number" id="batch_size_step8" class="w-full p-2 border rounded-md" value="50" min="1">
+            </div>
+            <div class="mb-4">
+                <label for="delete_no_icebreaker" class="block text-sm font-medium text-gray-700">Delete Rows with No Icebreaker</label>
+                <input type="checkbox" id="delete_no_icebreaker" class="mr-2" unchecked>
+                <span class="text-sm text-gray-600">If checked, rows without an icebreaker will be removed (default: unchecked)</span>
+            </div>
+            <div class="mb-4">
+                <label for="offset_step8" class="block text-sm font-medium text-gray-700">Offset (rows to skip, default: 0)</label>
+                <input type="number" id="offset_step8" class="w-full p-2 border rounded-md" value="0" min="0">
+            </div>
+            <div class="mb-4">
+                <label for="agent_prompt" class="block text-sm font-medium text-gray-700">Agent Prompt (default: default_agent)</label>
+                <input type="text" id="agent_prompt" class="w-full p-2 border rounded-md" value="default_agent">
+            </div>
+            <div class="flex space-x-2">
+                <button id="run_step8" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Run Step 8</button>
+                <button id="stop_step8" class="px-4 py-2 bg-gray-600 text-white rounded cursor-not-allowed" disabled>Stop Step 8</button>
+            </div>
+            <div id="status8" class="mt-4 text-sm text-gray-700"></div>
         </div>
     </div>
     <script src="/static/js/main.js"></script>
