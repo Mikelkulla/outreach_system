@@ -11,6 +11,9 @@ class Config:
     LOG_PREFIX = "Log_File"
     SCRIPTS_PATH = os.path.join(BASE_DIR, "scripts")
     TEMP_PATH = os.path.join(BASE_DIR, "temp")  # New temp folder
+
+    # Agent Prompts Path
+    AGENT_PROMPTS_PATH = os.path.join(SCRIPTS_PATH, "openai", "agent_prompts.json")
     
     # Subdirectories for CSV processing
     FILTERED_URL_PATH = os.path.join(DATA_CSV_PATH, "filtered_url")
