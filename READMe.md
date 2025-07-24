@@ -1,4 +1,4 @@
-# My Project
+# Mass Outreach Lead Generation System
 
 ## Project Description
 
