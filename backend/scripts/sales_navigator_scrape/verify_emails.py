@@ -408,14 +408,14 @@ def process_csv_and_verify_emails(input_csv, output_csv, max_rows=2000, batch_si
                 except Exception as e:
                     logging.error(f"Error processing batch from index {batch_start_idx} to {batch_end_idx}: {e}", exc_info=True)
                 finally:
-                    # Ensure WebDriver for the batch is closed.
-                    if driver is not None:
-                        try:
-                            driver.quit()
-                            logging.info(f"WebDriver closed successfully for batch {batch_start_idx}-{batch_end_idx}.")
-                        except Exception as e:
-                            logging.error(f"Error closing WebDriver for batch {batch_start_idx}-{batch_end_idx}: {e}")
-                        # kill_chrome_processes() # Optional: ensure all related browser processes are terminated.
+                    # # Ensure WebDriver for the batch is closed.
+                    # if driver is not None:
+                    #     try:
+                    #         driver.quit()
+                    #         logging.info(f"WebDriver closed successfully for batch {batch_start_idx}-{batch_end_idx}.")
+                    #     except Exception as e:
+                    #         logging.error(f"Error closing WebDriver for batch {batch_start_idx}-{batch_end_idx}: {e}")
+                    #     # kill_chrome_processes() # Optional: ensure all related browser processes are terminated.
                         time.sleep(2)  # Brief pause to ensure processes can terminate fully.
                 if stopped:
                     break
